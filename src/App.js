@@ -382,6 +382,16 @@ function FilesPane({ subject, docs, setDocs, imgFor, expData, impRef, impData, s
   function selAll() { const m = {}; docs.forEach(d => { m[d.id] = true; }); setSel(m); }
   function clrAll() { setSel({}); }
   function ctxText() { return selDocs.map((d, i) => "=== 資料" + (i + 1) + ": " + d.name + " ===\n" + d.text).join("\n\n"); }
+  function moveDoc(id, dir) {
+    setDocs(prev => {
+      const idx = prev.findIndex(d => d.id === id);
+      const next = idx + dir;
+      if (next < 0 || next >= prev.length) return prev;
+      const arr = [...prev];
+      [arr[idx], arr[next]] = [arr[next], arr[idx]];
+      return arr;
+    });
+  }
 
   const reviewFmt = "\n\n【復習リスト用フォーマット】\n全問の答え合わせを出し終えたあと、最後に「📋 復習リスト貼り付け用」の見出しで、全問をQ1:/A:形式（解説なし、答えだけ）でまとめて出力して。";
 
@@ -575,6 +585,10 @@ function FilesPane({ subject, docs, setDocs, imgFor, expData, impRef, impData, s
                     <div style={{ fontSize: 11, color: "#aaa" }}>{d.date} ・ {d.kind.toUpperCase()} ・ 約{d.text.length}字 ・ {d.method}{d.hasImage ? (img ? " ・ 🖼 図あり" : " ・ 🖼 図あり(要再読込)") : ""}</div>
                   </div>
                   <CopyBtn text={d.text} label="本文コピー" />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                    <button onClick={() => moveDoc(d.id, -1)} disabled={docs.indexOf(d) === 0} style={{ border: "none", background: "transparent", cursor: docs.indexOf(d) === 0 ? "default" : "pointer", color: docs.indexOf(d) === 0 ? "#ddd" : "#999", padding: "1px 4px", lineHeight: 1 }}>▲</button>
+                    <button onClick={() => moveDoc(d.id, 1)} disabled={docs.indexOf(d) === docs.length - 1} style={{ border: "none", background: "transparent", cursor: docs.indexOf(d) === docs.length - 1 ? "default" : "pointer", color: docs.indexOf(d) === docs.length - 1 ? "#ddd" : "#999", padding: "1px 4px", lineHeight: 1 }}>▼</button>
+                  </div>
                   <button onClick={() => setOpenDoc(p => ({ ...p, [d.id]: !p[d.id] }))} style={{ border: "none", background: "transparent", cursor: "pointer", color: "#999" }}>{openDoc[d.id] ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</button>
                   <button onClick={() => { setDocs(prev => prev.filter(x => x.id !== d.id)); setSessionImgs(prev => prev.filter(im => im.docId !== d.id)); }} style={{ border: "none", background: "transparent", cursor: "pointer", color: "#c0392b" }}><Trash2 size={15} /></button>
                 </div>
