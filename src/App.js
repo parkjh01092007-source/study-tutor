@@ -369,6 +369,7 @@ function FilesPane({ subject, docs, setDocs, imgFor, expData, impRef, impData, s
   const [cnt, setCnt] = useState(5);
   const [showPaste, setShowPaste] = useState(false);
   const [pName, setPName] = useState(""), [pText, setPText] = useState("");
+  const [examType, setExamType] = useState("mc");
 
   const picked = docs.filter(d => sel[d.id]);
   const selDocs = picked.length ? picked : docs;
@@ -397,6 +398,16 @@ function FilesPane({ subject, docs, setDocs, imgFor, expData, impRef, impData, s
       }
       if (kind === "lecture") return toSuperscript(pp + ctx + "\n\n---\nこの資料の要点を、初学者向けにミニ講義してくれる？");
       if (kind === "cards") return toSuperscript(pp + ctx + "\n\n---\nこの資料から暗記カードを10枚作って。「Q: 〜 / A: 〜」の形式で。");
+      if (kind === "exam") {
+        const examInstr = examType === "random"
+          ? "4択・正誤（T/F）・空欄補充・記述のどれかをランダムに1問だけ出して。形式は毎回変えて。"
+          : examType === "mc" ? "4択問題を1問だけ出して。選択肢はA〜Dの4つ。"
+          : examType === "tf" ? "正誤問題（True/False）を1問だけ出して。「正しい」か「誤り」かを答えさせる形式で。"
+          : examType === "fill" ? "空欄補充問題を1問だけ出して。文中の重要語句を空欄にして、答えを入れさせる形式で。"
+          : "記述問題を1問だけ出して。概念の説明や理由を数文で述べさせる形式で。";
+        return toSuperscript(pp + ctx + "\n\n---\n【大学試験レベルの問題を1問出して】\n" + examInstr + "\n\n【ルール】\n・問題だけ先に出すこと。答えはまだ出さない。\n・「答え合わせして」と言われたら正解と解説を教えて。\n・問題の難易度は大学の定期試験レベルで。");
+      }
+      if (kind === "summary") return toSuperscript(pp + ctx + "\n\n---\n【重点（試験直前まとめ）を作って】\n以下の構成で、この資料の内容を試験直前に見返せる形にまとめて。\n\n① 重要概念・用語（定義を簡潔に）\n② 重要な公式・法則・関係（あれば）\n③ よく問われるポイント・ひっかけ注意点\n④ 全体の流れ・構造の一言まとめ\n\n箇条書きを中心に、見やすく簡潔にまとめること。");
       return toSuperscript(pp + ctx);
     }
     const head = "あなたは大学の「" + subject.name + "」のチューターです。以下の講義資料に基づいて教えてください。専門用語は丁寧に、正確さを保って。\n\n";
@@ -412,6 +423,16 @@ function FilesPane({ subject, docs, setDocs, imgFor, expData, impRef, impData, s
     }
     if (kind === "lecture") return toSuperscript(head + ctx + "\n\n---\nこの資料の要点を、初学者向けに簡単な講義形式で説明してください。");
     if (kind === "cards") return toSuperscript(head + ctx + "\n\n---\nこの資料から暗記カードを10枚作ってください。「Q: 〜 / A: 〜」の形式で出力してください。");
+    if (kind === "exam") {
+      const examInstr = examType === "random"
+        ? "4択・正誤（T/F）・空欄補充・記述のどれかをランダムに1問だけ出してください。形式は毎回変えてください。"
+        : examType === "mc" ? "4択問題を1問だけ出してください。選択肢はA〜Dの4つ。"
+        : examType === "tf" ? "正誤問題（True/False）を1問だけ出してください。「正しい」か「誤り」かを答えさせる形式で。"
+        : examType === "fill" ? "空欄補充問題を1問だけ出してください。文中の重要語句を空欄にして、答えを入れさせる形式で。"
+        : "記述問題を1問だけ出してください。概念の説明や理由を数文で述べさせる形式で。";
+      return toSuperscript(head + ctx + "\n\n---\n【大学試験レベルの問題を1問出してください】\n" + examInstr + "\n\n【ルール】\n・問題だけ先に出すこと。答えはまだ出さないでください。\n・「答え合わせして」と言われたら正解と解説を教えてください。\n・問題の難易度は大学の定期試験レベルで。");
+    }
+    if (kind === "summary") return toSuperscript(head + ctx + "\n\n---\n【重点（試験直前まとめ）を作ってください】\n以下の構成で、この資料の内容を試験直前に見返せる形にまとめてください。\n\n① 重要概念・用語（定義を簡潔に）\n② 重要な公式・法則・関係（あれば）\n③ よく問われるポイント・ひっかけ注意点\n④ 全体の流れ・構造の一言まとめ\n\n箇条書きを中心に、見やすく簡潔にまとめること。");
     return toSuperscript(head + ctx);
   }
 
@@ -475,11 +496,24 @@ function FilesPane({ subject, docs, setDocs, imgFor, expData, impRef, impData, s
               </div>
             )}
             <div style={{ fontSize: 11, fontWeight: 700, color: "#aaa", marginBottom: 7 }}>① 新しいチャットの最初に貼る{subject.persona ? "（人格＋資料＋指示）" : "（資料＋指示）"}</div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: subject.persona ? 14 : 0 }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
               <CopyBtn text={makePrompt("quiz")} label="復習問題（フル）" style={S.pBtn(subject.accent)} />
               <CopyBtn text={makePrompt("lecture")} label="ミニ講義（フル）" style={S.pBtn(subject.accent)} />
               <CopyBtn text={makePrompt("cards")} label="カード生成（フル）" style={S.pBtn(subject.accent)} />
               <CopyBtn text={makePrompt("ctx")} label={subject.persona ? "人格＋資料だけ" : "資料だけ"} style={S.btn(subject.accent)} />
+            </div>
+            <div style={{ background: "#faf9f6", borderRadius: 10, padding: "12px 14px", marginBottom: 12 }}>
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: "#888", marginBottom: 8 }}>🎓 試験形式（1問）</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+                {[["mc","4択"],["tf","正誤T/F"],["fill","空欄補充"],["essay","記述"],["random","ランダム"]].map(([v,l]) => (
+                  <button key={v} onClick={() => setExamType(v)} style={{ padding: "6px 12px", borderRadius: 8, fontSize: 12.5, fontWeight: examType === v ? 700 : 500, cursor: "pointer", border: "1px solid " + (examType === v ? subject.accent : "#ddd"), background: examType === v ? subject.accent : "#fff", color: examType === v ? "#fff" : "#555" }}>{l}</button>
+                ))}
+              </div>
+              <CopyBtn text={makePrompt("exam")} label="試験問題（フル）" style={S.pBtn(subject.accent)} />
+            </div>
+            <div style={{ marginBottom: subject.persona ? 14 : 0 }}>
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: "#888", marginBottom: 8 }}>📒 重点</div>
+              <CopyBtn text={makePrompt("summary")} label="重点（フル）" style={S.pBtn(subject.accent)} />
             </div>
             {subject.persona && (
               <React.Fragment>
