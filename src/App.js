@@ -51,8 +51,17 @@ const storage = {
   }
 };
 
+// ---- 累乗を上付き文字に変換 ----
+function toSuperscript(text) {
+  const supMap = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','+':'⁺','-':'⁻','n':'ⁿ','i':'ⁱ'};
+  return text.replace(/\^(\{[^}]+\}|[0-9+\-ni]+)/g, (_, exp) => {
+    const inner = exp.startsWith('{') ? exp.slice(1, -1) : exp;
+    return inner.split('').map(c => supMap[c] || c).join('');
+  });
+}
+
 // ---- 数式指示 ----
-const MATH_NOTE = "\n\n【数式の表記ルール】\n数式はプレーンテキストのみで表現すること。LaTeX記法（$...$や\\muなど）は使わない。例：E[X^k]、(X-μ)^k、Σxi/n、s²=1/(n-1)Σ(xi-x̄)²。記号はそのままUnicode文字（μ、σ、Σ、∈、⊂など）を使ってよい。";
+const MATH_NOTE = "\n\n【数式の表記ルール】\n数式はプレーンテキストのみで表現すること。LaTeX記法（$...$や\\muなど）は使わない。累乗は上付き文字で表現する（例：x²、xⁿ、(X-μ)²）。その他の例：E[Xᵏ]、Σxi/n、s²=1/(n-1)Σ(xi-x̄)²。記号はそのままUnicode文字（μ、σ、Σ、∈、⊂など）を使ってよい。";
 
 // ---- 人格プロンプト ----
 const SORA_PROMPT = "あなたは会計学入門を教えるチューターですが、「想良（そら）」という名前の、明るくて今風な喋り方をする後輩キャラとして振る舞ってください。明るくテンション高め、今風でフランクな口調（タメ口寄り）、私のことは年上として「センパイ」と呼ぶ。ただしノリだけでなく芯には「相手を本気で理解したい」真剣さがあり、私がどこで詰まっているか本気で知ろうとし、突き放さない。真剣な質問にはテンションを落として向き合う。会計の説明の正確さは絶対に保つこと（試験対策なので）。専門用語はフランクな口調のまま丁寧に説明して。\n\n以下の講義資料をもとに教えてください：\n\n" + MATH_NOTE;
@@ -383,12 +392,12 @@ function FilesPane({ subject, docs, setDocs, imgFor, expData, impRef, impData, s
       if (kind === "quiz") {
         const f = instr[fmt] || instr.mix || "";
         const common = "この資料から、" + f + "復習問題を" + cnt + "問つくって。\n【重要なルール】\n・答えと解説は最初に出さないで！まず問題だけ出すこと。\n・「答え合わせして」と言われたら初めて解説を教えて。" + reviewFmt;
-        if (mode === "oneByOne") return pp + ctx + "\n\n---\n" + common + "\n\n【進め方：1問ずつ対話形式】\n・まず" + cnt + "問の一覧を見せて（問題文だけ）。\n・「Q4から」「次は2番」と指定したらその問題から。「次」は未回答から。\n・答えたら正誤と解説を教えて次へ。全問終わったら復習リスト用フォーマットで出して。";
-        return pp + ctx + "\n\n---\n" + common + "\n\n【進め方：まとめて出題】\n・" + cnt + "問を番号付きで一気に出して（問題文だけ）。\n・「答え合わせして」で全問の解説。解説のあと復習リスト用フォーマットで出して。";
+        if (mode === "oneByOne") return toSuperscript(pp + ctx + "\n\n---\n" + common + "\n\n【進め方：1問ずつ対話形式】\n・まず" + cnt + "問の一覧を見せて（問題文だけ）。\n・「Q4から」「次は2番」と指定したらその問題から。「次」は未回答から。\n・答えたら正誤と解説を教えて次へ。全問終わったら復習リスト用フォーマットで出して。");
+        return toSuperscript(pp + ctx + "\n\n---\n" + common + "\n\n【進め方：まとめて出題】\n・" + cnt + "問を番号付きで一気に出して（問題文だけ）。\n・「答え合わせして」で全問の解説。解説のあと復習リスト用フォーマットで出して。");
       }
-      if (kind === "lecture") return pp + ctx + "\n\n---\nこの資料の要点を、初学者向けにミニ講義してくれる？";
-      if (kind === "cards") return pp + ctx + "\n\n---\nこの資料から暗記カードを10枚作って。「Q: 〜 / A: 〜」の形式で。";
-      return pp + ctx;
+      if (kind === "lecture") return toSuperscript(pp + ctx + "\n\n---\nこの資料の要点を、初学者向けにミニ講義してくれる？");
+      if (kind === "cards") return toSuperscript(pp + ctx + "\n\n---\nこの資料から暗記カードを10枚作って。「Q: 〜 / A: 〜」の形式で。");
+      return toSuperscript(pp + ctx);
     }
     const head = "あなたは大学の「" + subject.name + "」のチューターです。以下の講義資料に基づいて教えてください。専門用語は丁寧に、正確さを保って。\n\n";
     const instr = subject.formatInstr || {};
@@ -396,22 +405,22 @@ function FilesPane({ subject, docs, setDocs, imgFor, expData, impRef, impData, s
       const f = subject.formats ? (instr[fmt] || instr.mix || "") : "";
       if (subject.formats) {
         const common = "この資料から、" + f + "復習問題を" + cnt + "問つくってください。\n【重要なルール】\n・答えと解説は最初に出さず、まず問題だけ出してください。\n・「答え合わせして」と言われたら解説してください。" + reviewFmt;
-        if (mode === "oneByOne") return head + ctx + "\n\n---\n" + common + "\n\n【進め方：1問ずつ】\n・まず" + cnt + "問の一覧を見せてください（問題文だけ）。指定された番号から出してOK。全問終わったら復習リスト用フォーマットで出してください。";
-        return head + ctx + "\n\n---\n" + common + "\n\n【進め方：まとめて出題】\n・" + cnt + "問を番号付きで一気に出してください（問題文だけ）。「答え合わせして」で全問の解説。解説のあと復習リスト用フォーマットで出してください。";
+        if (mode === "oneByOne") return toSuperscript(head + ctx + "\n\n---\n" + common + "\n\n【進め方：1問ずつ】\n・まず" + cnt + "問の一覧を見せてください（問題文だけ）。指定された番号から出してOK。全問終わったら復習リスト用フォーマットで出してください。");
+        return toSuperscript(head + ctx + "\n\n---\n" + common + "\n\n【進め方：まとめて出題】\n・" + cnt + "問を番号付きで一気に出してください（問題文だけ）。「答え合わせして」で全問の解説。解説のあと復習リスト用フォーマットで出してください。");
       }
-      return head + ctx + "\n\n---\nこの資料から復習問題を5問出してください。各問に答えと簡単な解説もつけてください。";
+      return toSuperscript(head + ctx + "\n\n---\nこの資料から復習問題を5問出してください。各問に答えと簡単な解説もつけてください。");
     }
-    if (kind === "lecture") return head + ctx + "\n\n---\nこの資料の要点を、初学者向けに簡単な講義形式で説明してください。";
-    if (kind === "cards") return head + ctx + "\n\n---\nこの資料から暗記カードを10枚作ってください。「Q: 〜 / A: 〜」の形式で出力してください。";
-    return head + ctx;
+    if (kind === "lecture") return toSuperscript(head + ctx + "\n\n---\nこの資料の要点を、初学者向けに簡単な講義形式で説明してください。");
+    if (kind === "cards") return toSuperscript(head + ctx + "\n\n---\nこの資料から暗記カードを10枚作ってください。「Q: 〜 / A: 〜」の形式で出力してください。");
+    return toSuperscript(head + ctx);
   }
 
   function instrOnly() {
     const instr = subject.formatInstr || {};
     const f = instr[fmt] || instr.mix || "";
     const base = "さっきの資料をもとに、" + f + "復習問題を" + cnt + "問つくって。答えと解説は最初に出さず、まず問題だけ出してね。「答え合わせして」で解説して。";
-    if (mode === "oneByOne") return base + "\n1問ずつ対話で。まず一覧（問題文だけ）を見せて、指定した順でOK。「次」は未回答から。" + reviewFmt;
-    return base + "\n" + cnt + "問まとめて出して、「答え合わせして」で解説。" + reviewFmt;
+    if (mode === "oneByOne") return toSuperscript(base + "\n1問ずつ対話で。まず一覧（問題文だけ）を見せて、指定した順でOK。「次」は未回答から。" + reviewFmt);
+    return toSuperscript(base + "\n" + cnt + "問まとめて出して、「答え合わせして」で解説。" + reviewFmt);
   }
   function docsOnly() { return "以下の資料も参考にして（さっきまでの会話の続きで、追加の教材です）：\n\n" + ctxText(); }
 
